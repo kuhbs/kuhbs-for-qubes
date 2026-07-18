@@ -1,0 +1,38 @@
+# Python bytecode/cache files are generated locally by tests and imports.
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python test/coverage/tool caches are local developer artifacts.
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.tox/
+.nox/
+
+# Python packaging/build output should be rebuilt, not committed.
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments and uv lockfiles are machine-local for this package.
+.venv/
+venv/
+env/
+uv.lock
+
+# Editor, OS, and temporary swap files are not project state.
+*~
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local logs and scratch output.
+*.log
+*.tmp

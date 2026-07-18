@@ -1,0 +1,31 @@
+order: 10
+id: test-ndp
+name: Test Ndp
+description: Test KUHB for named DisposableVM behavior
+icon: icon.svg
+type: ndp
+template: debian-13-minimal
+kuhs:
+  tpl:
+    prefs:
+      netvm: ndp-kuhbs-net-gateway
+    setup_scripts:
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/apt-sources-list-enforce-http.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/apt-update.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/basics.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/networking-packages.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/remove-networking-packages.sh
+  app:
+    instances:
+    - id: default
+      prefs:
+        label: green
+        template_for_dispvms: true
+      backup:
+        paths:
+        - /home/user/.config/vairgap
+  ndp:
+    instances:
+    - id: default
+      prefs:
+        label: red

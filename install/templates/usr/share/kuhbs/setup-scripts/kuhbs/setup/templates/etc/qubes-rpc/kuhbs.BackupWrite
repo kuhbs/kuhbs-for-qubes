@@ -1,0 +1,20 @@
+#!/bin/sh
+# Receive one KUHBS backup archive from one policy-allowed source qube
+# This file is copied from install/templates/usr/share/kuhbs/setup-scripts/kuhbs/setup/templates/etc/qubes-rpc/kuhbs.BackupWrite into /etc/qubes-rpc/kuhbs.BackupWrite
+
+set -eu
+
+# Qubes sets this to the VM name that called the qrexec service
+src="$QREXEC_REMOTE_DOMAIN"
+
+# This qrexec service does not receive KUHBS config, so the archive root is a hard contract
+# The caller VM name is the only destination selector; the source VM never sends a path
+dst="/mnt/kuhbs-backup/$src.tar.zst"
+
+# Backup archives can contain every private file from a qube
+# Keep new archives readable only by the backup VM's ordinary user
+umask 077
+cat > "$dst"
+chmod 600 "$dst"
+# Flush this completed archive so forced backup-VM removal cannot discard its cached data
+/usr/bin/sync "$dst"

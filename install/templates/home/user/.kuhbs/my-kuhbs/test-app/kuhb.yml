@@ -1,0 +1,63 @@
+order: 500
+id: test-app
+name: Test App
+description: Test KUHB for AppVM behavior
+icon: icon.svg
+type: app
+template: debian-13-minimal
+kuhs:
+  tpl:
+    prefs:
+      netvm: ndp-kuhbs-net-gateway
+    services:
+      meminfo-writer: true
+      qubes-update-check: true
+    features: {}
+    setup_scripts:
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/apt-sources-list-enforce-http.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/apt-update.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/basics.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/networking-packages.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/passwordless-sudo-shutdown.sh
+  app:
+    instances:
+    - id: work
+      prefs:
+        label: green
+        netvm: ndp-kuhbs-net-gateway
+      services:
+        meminfo-writer: true
+      features:
+        menu-items: element-desktop.desktop xfce4-terminal.desktop
+        default-menu-items: element-desktop.desktop xfce4-terminal.desktop
+      backup:
+        paths:
+        - /home/user/.config/
+      launchers:
+      - id: element
+        name: Element Work
+        user: user
+        dispvm: false
+        command: /usr/bin/element-desktop
+        run_in_terminal: true
+        shutdown_on_exit_0: true
+      setup_scripts: &id001
+      - /usr/share/kuhbs/setup-scripts/kuhbs/setup/xmodmap-german-umlauts.sh
+    - id: private
+      prefs:
+        label: yellow
+        netvm: ndp-kuhbs-net-gateway
+      services:
+        meminfo-writer: true
+      features:
+        menu-items: element-desktop.desktop xfce4-terminal.desktop
+        default-menu-items: element-desktop.desktop xfce4-terminal.desktop
+      launchers:
+      - id: elementlab
+        name: Element Private
+        user: user
+        dispvm: false
+        command: /usr/bin/element-desktop
+        run_in_terminal: true
+        shutdown_on_exit_0: true
+      setup_scripts: *id001

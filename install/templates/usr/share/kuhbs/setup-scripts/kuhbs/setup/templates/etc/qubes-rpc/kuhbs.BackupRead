@@ -1,0 +1,12 @@
+#!/bin/sh
+# Serve one KUHBS backup archive to its matching policy-allowed source qube
+# This file is copied from install/templates/usr/share/kuhbs/setup-scripts/kuhbs/setup/templates/etc/qubes-rpc/kuhbs.BackupRead into /etc/qubes-rpc/kuhbs.BackupRead
+
+set -eu
+
+# Qubes sets this to the VM name that called the qrexec service
+src="$QREXEC_REMOTE_DOMAIN"
+
+# This qrexec service does not receive KUHBS config, so the archive root is a hard contract
+# The caller VM name is the only source selector; the target VM never sends a path
+cat "/mnt/kuhbs-backup/$src.tar.zst"

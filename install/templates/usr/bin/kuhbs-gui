@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Launch the installed KUHBS GTK GUI package from /usr/share/kuhbs
+# Keep this wrapper tiny so the GUI and CLI share the same Python code
+
+set -euo pipefail
+
+# -P keeps the current directory from shadowing the installed /usr/share/kuhbs package
+PYTHONPATH=/usr/share/kuhbs exec /usr/bin/python3 -P -m kuhbs.gui "$@"

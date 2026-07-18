@@ -1,0 +1,165 @@
+window.kuhbs-window {
+    background: #0c0b10;
+    color: #f5f2ff;
+}
+notebook.kuhbs-notebook > header {
+    background: #0c0b10;
+    border: 0;
+}
+notebook.kuhbs-notebook tab {
+    background: #121018;
+    color: #9c91aa;
+    border: 1px solid #25202f;
+    border-radius: 10px 10px 0 0;
+    padding: 8px 14px;
+}
+notebook.kuhbs-notebook tab:checked {
+    background: #1b1227;
+    color: #ffffff;
+    border-color: #6400a8;
+}
+box.kuhbs-page {
+    background: #0c0b10;
+    padding: 14px;
+}
+entry.kuhbs-search {
+    background: #121018;
+    color: #ffffff;
+    border: 1px solid #2e2739;
+    border-radius: 9px;
+    padding: 8px 10px;
+}
+button.kuhbs-button {
+    background: #17131d;
+    color: #eee8ff;
+    border: 1px solid #342a42;
+    border-radius: 9px;
+    padding: 8px 14px;
+}
+button.kuhbs-button:hover {
+    background: #20172a;
+    border-color: #6400a8;
+}
+button.kuhbs-button:disabled {
+    background: #0f0d13;
+    color: #51475c;
+    border-color: #17131d;
+}
+button.kuhbs-button:disabled label {
+    color: #51475c;
+}
+button.kuhbs-button:not(:disabled) {
+    box-shadow: 0 0 0 1px rgba(100, 0, 168, 0.45);
+}
+button.kuhbs-primary {
+    background: #6400a8;
+    color: #ffffff;
+    border-color: #7d25c8;
+}
+button.kuhbs-danger {
+    color: #ffb0b0;
+    border-color: #803838;
+}
+frame.kuhbs-row {
+    background: #121018;
+    border: 1px solid #211b2b;
+    border-radius: 9px;
+    padding: 0;
+}
+frame.kuhbs-row-selected {
+    background: #171020;
+    border: 1px solid #6400a8;
+    border-left: 4px solid #6400a8;
+    border-radius: 9px;
+    padding: 0;
+}
+frame.kuhbs-header-row {
+    background: #0c0b10;
+    border: 0;
+    padding: 4px 0 2px 0;
+}
+label.kuhbs-column-header {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: bold;
+}
+label.kuhbs-title {
+    color: #ffffff;
+    font-size: 17px;
+}
+label.kuhbs-muted {
+    color: #cfc5dd;
+    font-size: 15px;
+}
+label.kuhbs-description {
+    color: #b8abc8;
+    font-size: 15px;
+}
+label.kuhbs-status {
+    color: #776d82;
+    font-size: 14px;
+}
+label.kuhbs-state-badge {
+    color: #f5f2ff;
+    font-size: 14px;
+    font-weight: bold;
+}
+label.kuhbs-meta-right {
+    color: #8e819b;
+    font-size: 14px;
+}
+label.kuhbs-list-green {
+    color: #33d17a;
+}
+label.kuhbs-list-orange {
+    color: #ff9f1a;
+}
+label.kuhbs-list-red {
+    color: #ff5c5c;
+}
+label.kuhbs-list-gray {
+    color: #8e8e8e;
+}
+label.kuhbs-status-pill {
+    background: #21182c;
+    color: #d9b4ff;
+    border: 1px solid #423052;
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-weight: bold;
+}
+label.kuhbs-repo-title {
+    color: #ddd4ef;
+    font-weight: bold;
+    font-size: 17px;
+}
+frame.kuhbs-repo-title-frame {
+    background: #16131c;
+    border: 1px solid #2a2335;
+    border-radius: 9px;
+    padding: 0;
+}
+frame.kuhbs-repo-title-selected {
+    background: #1a1322;
+    border: 1px solid #6400a8;
+    border-left: 4px solid #6400a8;
+    border-radius: 9px;
+    padding: 0;
+}
+label.kuhbs-icon-fallback {
+    background: #6400a8;
+    color: #ffffff;
+    border-radius: 18px;
+    font-weight: bold;
+    font-size: 20px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+}
+label.kuhbs-ops {
+    background: #121018;
+    color: #d4c9e8;
+    border: 1px solid #211b2b;
+    border-radius: 9px;
+    padding: 8px;
+}

@@ -1,0 +1,325 @@
+# Standard JSON Schema for the complete defaults.yml product contract
+# Actual default values stay in defaults.yml while this file owns types and required keys
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: defaults.schema.yml
+
+type: object
+required:
+  - schema
+  - paths
+  - repos
+  - firewall
+  - i3_integration
+  - backup
+  - batch_size
+  - upgrade
+  - logging
+  - terminal
+  - default_kuhb
+  - default_launcher
+properties:
+  schema:
+    const: 1
+
+  paths:
+    type: object
+    required:
+      - config
+      - scripts
+      - kuhbs
+      - setup_scripts
+      - user_setup_scripts
+      - desktop_applications
+    properties:
+      config:
+        type: string
+        minLength: 1
+      scripts:
+        type: string
+        minLength: 1
+      kuhbs:
+        type: string
+        minLength: 1
+      setup_scripts:
+        type: string
+        minLength: 1
+      user_setup_scripts:
+        type: string
+        minLength: 1
+      desktop_applications:
+        type: string
+        minLength: 1
+    additionalProperties: false
+
+  repos:
+    type: object
+    required:
+      - branch
+      - commit_selection_count
+      - dispvm_template
+      - ssh_private_key
+    properties:
+      # Branch and list length control the audited commit selector inside the repository VM
+      branch:
+        type: string
+        minLength: 1
+      commit_selection_count:
+        type: integer
+        minimum: 1
+      # A configured AppVM supplies the template for each temporary named repository DispVM
+      dispvm_template:
+        $ref: 'kuhb.schema.yml#/$defs/qubes_name'
+      # The multiline OpenSSH key is copied as a file so its contents never enter command logs
+      ssh_private_key:
+        type: string
+        minLength: 1
+    additionalProperties: false
+
+  firewall:
+    type: object
+    required:
+      - qubes_snitch
+    properties:
+      qubes_snitch:
+        type: object
+        required:
+          - snitch_vm
+          - rules_dir
+        properties:
+          snitch_vm:
+            $ref: 'kuhb.schema.yml#/$defs/qubes_name'
+          rules_dir:
+            type: string
+            minLength: 1
+        additionalProperties: false
+    additionalProperties: false
+
+  i3_integration:
+    type: object
+    required:
+      - notify_send_on_change
+      - notify_send_timeout_ms
+      - workspace_attention_file
+    properties:
+      notify_send_on_change:
+        type: boolean
+      notify_send_timeout_ms:
+        type: integer
+        minimum: 1
+      workspace_attention_file:
+        type: string
+        minLength: 1
+    additionalProperties: false
+
+  backup:
+    type: object
+    required:
+      - kuh
+      - crypt_name
+      - max_age_hours
+      - ignore_failed_read
+      # Dom0 has no concrete KUH backup block for a per-VM override
+      - dom0_ignore_failed_read
+      - dom0_paths
+    properties:
+      kuh:
+        $ref: 'kuhb.schema.yml#/$defs/qubes_name'
+      crypt_name:
+        type: string
+        minLength: 1
+      max_age_hours:
+        type: number
+        exclusiveMinimum: 0
+      ignore_failed_read:
+        type: boolean
+      # Dom0 needs an independent policy so enabling it does not weaken KUH defaults
+      dom0_ignore_failed_read:
+        type: boolean
+      dom0_paths:
+        type: array
+        items:
+          type: string
+          minLength: 1
+    additionalProperties: false
+
+  batch_size:
+    type: object
+    required:
+      - create
+      - remove
+      - backup
+      - restore
+      - upgrade
+    properties:
+      create:
+        type: integer
+        minimum: 1
+      remove:
+        type: integer
+        minimum: 1
+      backup:
+        type: integer
+        minimum: 1
+      restore:
+        type: integer
+        minimum: 1
+      upgrade:
+        type: integer
+        minimum: 1
+    additionalProperties: false
+
+  upgrade:
+    type: object
+    required:
+      - max_age_minutes
+      - restart_without_prompt
+    properties:
+      max_age_minutes:
+        type: number
+        exclusiveMinimum: 0
+      restart_without_prompt:
+        type: array
+        items:
+          $ref: 'kuhb.schema.yml#/$defs/qubes_name'
+    additionalProperties: false
+
+  logging:
+    type: object
+    required:
+      - spacing
+      - colors
+    properties:
+      spacing:
+        type: integer
+        minimum: 1
+      colors:
+        type: object
+        required:
+          - red
+          - orange
+          - yellow
+          - green
+          - gray
+          - blue
+          - purple
+          - black_background_white_text
+        properties:
+          red:
+            type: integer
+            minimum: 0
+            maximum: 255
+          orange:
+            type: integer
+            minimum: 0
+            maximum: 255
+          yellow:
+            type: integer
+            minimum: 0
+            maximum: 255
+          green:
+            type: integer
+            minimum: 0
+            maximum: 255
+          gray:
+            type: integer
+            minimum: 0
+            maximum: 255
+          blue:
+            type: integer
+            minimum: 0
+            maximum: 255
+          purple:
+            type: integer
+            minimum: 0
+            maximum: 255
+          black_background_white_text:
+            type: object
+            required:
+              - background
+              - foreground
+            properties:
+              background:
+                type: integer
+                minimum: 0
+                maximum: 255
+              foreground:
+                type: integer
+                minimum: 0
+                maximum: 255
+            additionalProperties: false
+        additionalProperties: false
+    additionalProperties: false
+
+  terminal:
+    type: object
+    required:
+      - path
+      - args
+      - fallback
+    properties:
+      path:
+        type: string
+        enum:
+          - /usr/bin/xfce4-terminal
+          - /usr/bin/xterm
+      args:
+        type: array
+        items:
+          type: string
+      fallback:
+        type: object
+        required:
+          - path
+          - args
+        properties:
+          path:
+            type: string
+            enum:
+              - /usr/bin/xfce4-terminal
+              - /usr/bin/xterm
+          args:
+            type: array
+            items:
+              type: string
+        additionalProperties: false
+    additionalProperties: false
+
+  default_kuhb:
+    # Required user metadata is intentionally absent because raw KUHB schema owns it
+    type: object
+    required:
+      - confirm_network_after_upgrade
+      - kuhs
+    properties:
+      confirm_network_after_upgrade:
+        type: boolean
+      kuhs:
+        type: object
+        required:
+          - tpl
+          - app
+          - ndp
+          - sta
+        properties:
+          tpl:
+            $ref: 'kuhb.schema.yml#/$defs/resolved_tpl'
+          app:
+            $ref: 'kuhb.schema.yml#/$defs/resolved_app_kind'
+          ndp:
+            $ref: 'kuhb.schema.yml#/$defs/resolved_instance_kind'
+          sta:
+            $ref: 'kuhb.schema.yml#/$defs/resolved_sta_kind'
+        additionalProperties: false
+    additionalProperties: false
+
+  default_launcher:
+    # Required launcher values come from each raw launcher; only Autostart menu membership defaults
+    type: object
+    required:
+      - autostart
+    properties:
+      autostart:
+        type: boolean
+    additionalProperties: false
+
+additionalProperties: false

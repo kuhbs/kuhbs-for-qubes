@@ -1,0 +1,49 @@
+order: 500
+id: test-udp
+name: Test Udp
+description: Test KUHB for unnamed DisposableVM launcher behavior
+icon: icon.svg
+type: udp
+template: debian-13-minimal
+kuhs:
+  tpl:
+    prefs:
+      netvm: ndp-kuhbs-net-gateway
+    setup_scripts:
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/apt-sources-list-enforce-http.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/apt-update.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/basics.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/networking-packages.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/install-flatpak.sh
+    - /usr/share/kuhbs/setup-scripts/kuhbs/setup/passwordless-sudo-shutdown.sh
+  app:
+    instances:
+    - id: default
+      prefs:
+        label: green
+        netvm: ndp-kuhbs-net-gateway
+        template_for_dispvms: true
+      services:
+        meminfo-writer: true
+      features:
+        appmenus-dispvm: true
+        menu-items: app.zen_browser.zen.desktop xfce4-terminal.desktop
+        default-menu-items: app.zen_browser.zen.desktop xfce4-terminal.desktop
+      backup:
+        paths:
+        - /home/user/.config/zen
+      launchers:
+      - id: zen
+        name: Zen
+        user: user
+        dispvm: true
+        command: /usr/bin/flatpak run app.zen_browser.zen
+        run_in_terminal: true
+        shutdown_on_exit_0: true
+      - id: terminal
+        name: Terminal
+        user: user
+        dispvm: true
+        command: terminal
+        run_in_terminal: false
+        shutdown_on_exit_0: false

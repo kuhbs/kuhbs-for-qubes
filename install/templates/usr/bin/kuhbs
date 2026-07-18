@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Launch the installed KUHBS CLI package from /usr/share/kuhbs
+# Keep this wrapper tiny so dom0 command output comes from Python itself
+
+set -euo pipefail
+
+# -P keeps the current directory from shadowing the installed /usr/share/kuhbs package
+PYTHONPATH=/usr/share/kuhbs exec /usr/bin/python3 -P -m kuhbs.cli "$@"

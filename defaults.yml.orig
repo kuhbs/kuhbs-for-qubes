@@ -1,0 +1,316 @@
+# KUHBS defaults loaded before every kuhb definition
+# Values here are real product defaults, not hidden Python fallback behavior
+schema: 1
+
+# Dom0 paths used by KUHBS itself
+paths:
+  # User-editable configuration, local state, and locks
+  config: ~/.kuhbs
+  # Concatenated setup scripts written by KUHBS before copying them into target kuhs
+  scripts: ~/.kuhbs/work/scripts
+  # Installed local kuhb definitions that the CLI and GUI list in My KUHBS
+  kuhbs: ~/.kuhbs/my-kuhbs
+  # KUHBS-provided setup-script fragments referenced by absolute path in kuhb.yml files
+  setup_scripts: /usr/share/kuhbs/setup-scripts
+  # Conventional user-owned setup-script fragment root for absolute ~/.kuhbs/setup-scripts/... references
+  user_setup_scripts: ~/.kuhbs/setup-scripts
+  # Generated desktop entries shown by graphical application menus
+  desktop_applications: ~/.local/share/applications
+  # Graphical editor opened after installing/downloading a local kuhb definition
+  editor: /usr/bin/gedit
+
+# Trusted KUHB repositories use main unless repo-add receives another branch
+repos:
+  branch: main
+  # Number of recent branch commits offered for audited selection
+  commit_selection_count: 10
+  # AppVM used as the template for temporary named repository DisposableVMs
+  dispvm_template: default-dvm
+  # Public key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIF5b201XibzvD6s+aAUHDuuNulgn5FADD4/b5jUDcJv7 kuhbs-repo-example
+  # This published example private key must never be authorized on a Git server
+  ssh_private_key: |
+    -----BEGIN OPENSSH PRIVATE KEY-----
+    b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+    QyNTUxOQAAACBeW9tNV4m87w+rPmgFBw7rjbpYJ+RQAw+P2+Y1A3Cb+wAAAJiPwkhcj8JI
+    XAAAAAtzc2gtZWQyNTUxOQAAACBeW9tNV4m87w+rPmgFBw7rjbpYJ+RQAw+P2+Y1A3Cb+w
+    AAAEC5XkHqVYfDuk/If8tca9k/hplagfh4T7p+ZYkl64gbAF5b201XibzvD6s+aAUHDuuN
+    ulgn5FADD4/b5jUDcJv7AAAAEmt1aGJzLXJlcG8tZXhhbXBsZQECAw==
+    -----END OPENSSH PRIVATE KEY-----
+
+# Firewall integration defaults
+firewall:
+  qubes_snitch:
+    # Firewall VM that owns /rw/usrlocal/qubes-snitch/rules
+    snitch_vm: app-kuhbs-net-firewall
+    # Persistent rule directory inside the firewall VM
+    rules_dir: /rw/usrlocal/qubes-snitch/rules
+
+# Optional i3 desktop integration policy
+# KUHBS core can ignore this section; the i3 integration daemon reads it
+i3_integration:
+  # True shows pause/unpause desktop notifications when qubes change state
+  notify_send_on_change: True
+  # Desktop notification timeout in milliseconds
+  notify_send_timeout_ms: 3000
+  # VM-side marker file that lets opted-in kuhs request a red/urgent i3 workspace
+  workspace_attention_file: /home/user/.i3-kuhbs-workspace-attention
+
+# Backup and restore defaults
+backup:
+  # Kuh where the user mounts backup storage before backup or restore operations
+  kuh: ndp-kuhbs-usb
+  # Headerless cryptsetup mapper name used by backup-mount and backup-umount
+  crypt_name: kuhbs-backups
+  # Backup mountpoint is hardcoded as /mnt because hooks and qrexec helpers use it directly
+  # mount_path: /mnt
+  # qrexec BackupWrite/BackupRead services cannot read dom0 defaults.yml,
+  # so the archive directory is a hard contract shared by Python and VM-side services
+  # path: /mnt/kuhbs-backup
+  # Backup age threshold used by kuhbs list when it checks per-kuh archive freshness by exit status
+  max_age_hours: 24
+  # True lets tar warn instead of failing when live app files change during backup
+  ignore_failed_read: True
+  # dom0 backup sources are trusted shell-expanded tar sources
+  # Use /home/user for all files including dotfiles, or /home/user/* to skip dotfiles
+  # Escape every space with a backslash so shell expansion receives one path argument
+  # Double-quoted YAML needs two backslashes; unquoted or single-quoted YAML needs one
+  # We assume that if a user restores dom0 backups, he does so on a fresh installation. Because
+  # of this, we do not backup /home/user/.kuhbs/states. Restoring states might mess with
+  # existing states.
+  dom0_paths:
+  - "/home/user/*"
+  - "/home/user/.kuhbs/repos"
+  - "/home/user/.kuhbs/my-kuhbs"
+
+# Parallel worker limits for operations that receive more than one target
+# The -all commands only expand arguments; the real operation reads this section
+batch_size:
+  create: 5
+  remove: 5
+  backup: 5
+  restore: 5
+  upgrade: 5
+
+# Upgrade freshness defaults
+upgrade:
+  # Kuhs with no successful upgrade in this many minutes are shown as upgradable
+  # 720 minutes is 12 hours
+  max_age_minutes: 720
+  # Running infrastructure kuhs listed here restart after upgrade without asking first
+  restart_without_prompt:
+  - ndp-kuhbs-net-nic
+  - ndp-kuhbs-net-gateway
+  - app-kuhbs-net-firewall
+  - ndp-kuhbs-usb
+  - ndp-kuhbs-net-tor
+
+# CLI terminal output
+logging:
+  # Minimum width of the source/context column in human-readable CLI and log lines
+  spacing: 25
+  # ANSI 256-color IDs used only for interactive CLI stdout
+  colors:
+    # Named ANSI palette entries used by EventLogger
+    red: 196
+    orange: 202
+    yellow: 226
+    green: 46
+    gray: 249
+    blue: 39
+    purple: 129
+    black_background_white_text:
+      # Badge-style colors for UI renderers that need background + foreground
+      background: 0
+      foreground: 15
+
+# Terminal opened for interactive hooks/setup scripts in dom0 or target kuhs
+terminal:
+  # Preferred terminal for visible script and launcher command output
+  path: /usr/bin/xfce4-terminal
+  # Options passed whenever KUHBS opens its configured terminal
+  args:
+    # Keep setup-script terminals visually minimal and close to old KUHBS behavior
+    - --hide-menubar
+    - --hide-borders
+    - --hide-toolbar
+    - --hide-scrollbar
+  # Explicit fallback terminal if xfce4-terminal is missing in the target kuh
+  fallback:
+    path: /usr/bin/xterm
+    args:
+      # xterm fallback is intentionally explicit so installer/setup output stays readable
+      - -fs
+      - "12"
+      - -fa
+      - DejaVuSansMono
+      - -bg
+      - black
+      - -fg
+      - white
+      - +sb
+      - -sl
+      - "10000"
+      - -si
+
+# Defaultable KUHB values merged only after raw kuhb.yml passes its schema
+# Required metadata belongs to each KUHB instead of pretending to have mandatory string defaults
+default_kuhb:
+  # Batch upgrades pause after marked kuhbs so manual network recovery, like WiFi auth, can finish
+  confirm_network_after_upgrade: False
+
+  kuhs:
+    # Per-kuhb TemplateVM defaults shared by app/ndp/udp children
+    tpl:
+      # True asks Qubes to random-key encrypt the powered-off VM's volatile volume on each start
+      volume_ephemeral: True
+      # Setup fragments copied/run during create and upgrade
+      setup_scripts: []
+      # qvm-prefs defaults applied to tpl-* resources unless the kuhb overrides them
+      prefs:
+        # Keep templates out of Qubes backup archives unless a kuhb opts in
+        include_in_backups: False
+        # Default Qubes label/color for generated resources
+        label: purple
+        # Dynamic memory ceiling in MiB
+        maxmem: 4096
+        # Initial assigned memory in MiB
+        memory: 4096
+        # No network by default; networked templates/kuhs must opt in explicitly
+        netvm: null
+        # Default virtual CPU count
+        vcpus: 4
+        # Hardware-virtualized mode is the safe baseline for generated VMs
+        virt_mode: hvm
+      # qvm-service defaults applied to tpl-* resources
+      services:
+        # Disabled by default because halted templates do not need live memory reporting
+        meminfo-writer: False
+      # qvm-features defaults applied to tpl-* resources
+      features: {}
+      # Menu/desktop entries exposed for this resource
+      launchers: []
+
+    # AppVM defaults; singleton-style apps still use an explicit instances list
+    app:
+      # AppVM definitions are always instance lists so one kuhb can create multiple app-* VMs
+      instances:
+      - id: default
+        # True is inherited by anonymous disp1234 VMs created from this AppVM template
+        volume_ephemeral: True
+        # Setup fragments copied/run inside this app instance
+        setup_scripts: []
+        # i3 integration reads this flag; KUHBS core only preserves it in resolved config
+        i3_integration_auto_pause: False
+        # qvm-prefs defaults applied to app-* resources unless the kuhb overrides them
+        prefs:
+          # Qubes autostart is off unless a kuhb explicitly wants boot-time startup
+          autostart: False
+          include_in_backups: False
+          label: purple
+          maxmem: 4096
+          memory: 4096
+          netvm: null
+          # Disabled unless this AppVM should be usable as a DisposableVM template
+          template_for_dispvms: False
+          vcpus: 4
+          virt_mode: hvm
+        # qvm-service defaults applied to app-* resources
+        services:
+          # Enabled per-app only when the UI needs live memory stats
+          meminfo-writer: False
+        # qvm-features defaults applied to app-* resources
+        features: {}
+        # Menu/desktop entries exposed for this app instance
+        launchers: []
+
+    # Named DisposableVM provider defaults: tpl + app template + ndp runtime VM
+    ndp:
+      # NDP definitions are always instance lists so one kuhb can create multiple provider VMs
+      instances:
+      - id: default
+        # Named DisposableVM providers have their own volatile volume, so set it directly
+        volume_ephemeral: True
+        # Setup fragments copied/run inside the named disposable provider VM
+        setup_scripts: []
+        # Auto-pause policy for the provider VM when using KUHBS i3 integration
+        i3_integration_auto_pause: False
+        # qvm-prefs defaults applied to ndp-* resources unless the kuhb overrides them
+        prefs:
+          # Qubes autostart is off unless a kuhb explicitly wants boot-time startup
+          autostart: False
+          include_in_backups: False
+          label: purple
+          maxmem: 4096
+          memory: 4096
+          netvm: null
+          vcpus: 4
+          virt_mode: hvm
+        # qvm-service defaults applied to ndp-* resources
+        services:
+          # Enabled per-ndp only when the UI needs live memory stats
+          meminfo-writer: False
+        # qvm-features defaults applied to ndp-* resources
+        features: {}
+        # Menu/desktop entries exposed for this provider VM
+        launchers: []
+
+    # StandaloneVM defaults; setup_template builds the base sta-* before instance setup runs
+    sta:
+      setup_template:
+        # The temporary setup template must get volatile encryption before setup scripts start it
+        volume_ephemeral: True
+        # Setup fragments run before per-instance standalone setup
+        setup_scripts: []
+        # qvm-prefs defaults used while creating the standalone base resource
+        prefs:
+          include_in_backups: False
+          label: purple
+          maxmem: 4096
+          memory: 4096
+          netvm: null
+          vcpus: 4
+          virt_mode: hvm
+        # qvm-service defaults used while creating the standalone base resource
+        services:
+          # Disabled by default because only running standalone instances need live memory reporting
+          meminfo-writer: False
+        # qvm-features defaults used while creating the standalone base resource
+        features: {}
+      instances:
+      # Standalone definitions are instance lists because each sta-* resource owns its root volume
+      - id: default
+        # Standalone root/private stay persistent; only the throwaway volatile volume uses this
+        volume_ephemeral: True
+        # Setup fragments copied/run inside this standalone instance
+        setup_scripts: []
+        # Auto-pause policy for this standalone when using KUHBS i3 integration
+        i3_integration_auto_pause: False
+        # qvm-prefs defaults applied to sta-* resources unless the kuhb overrides them
+        prefs:
+          # Qubes autostart is off unless a kuhb explicitly wants boot-time startup
+          autostart: False
+          include_in_backups: False
+          label: purple
+          maxmem: 4096
+          memory: 4096
+          netvm: null
+          vcpus: 4
+          virt_mode: hvm
+        # qvm-service defaults applied to sta-* resources
+        services:
+          # Enabled per-standalone only when the UI needs live memory stats
+          meminfo-writer: False
+        # qvm-features defaults applied to sta-* resources
+        features:
+          # Enable Qubes update proxy forwarder for standalone apt so it can use apt-cacher-ng from ndp-kuhbs-net-gateway
+          # We also add a line in /etc/qubes/policy.d/90-default.policy for this:
+          # qubes.UpdatesProxy      *   @anyvm                  @default    allow target=ndp-kuhbs-net-gateway
+          service.updates-proxy-setup: 1
+        # Menu/desktop entries exposed for this standalone instance
+        launchers: []
+
+# Launcher behavior stays explicit except for optional Autostart menu membership
+default_launcher:
+  # True includes this entry in the i3/rofi launcher named "Autostart"
+  # It does not start the entry automatically during boot or login
+  autostart: False

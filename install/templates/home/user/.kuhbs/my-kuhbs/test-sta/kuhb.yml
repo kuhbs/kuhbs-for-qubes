@@ -1,0 +1,63 @@
+order: 500
+id: test-sta
+name: Test Sta
+description: Test KUHB for StandaloneVM behavior
+icon: icon.svg
+type: sta
+template: debian-13-minimal
+kuhs:
+  sta:
+    setup_template:
+      prefs:
+        netvm: ndp-kuhbs-net-gateway
+      setup_scripts:
+      - /usr/share/kuhbs/setup-scripts/kuhbs/setup/apt-sources-list-enforce-http.sh
+      - /usr/share/kuhbs/setup-scripts/kuhbs/setup/apt-update.sh
+      - /usr/share/kuhbs/setup-scripts/kuhbs/setup/basics.sh
+      - /usr/share/kuhbs/setup-scripts/kuhbs/setup/networking-packages.sh
+      - /usr/share/kuhbs/setup-scripts/kuhbs/setup/passwordless-sudo-shutdown.sh
+    instances:
+    - id: blunix
+      prefs:
+        label: blue
+        netvm: ndp-kuhbs-net-gateway
+      backup:
+        paths:
+        - /home/user/play
+      launchers:
+      - id: vsplay
+        name: VSCode Play Blunix
+        user: user
+        dispvm: false
+        command: /usr/bin/play
+        run_in_terminal: true
+        shutdown_on_exit_0: false
+    - id: fish
+      prefs:
+        label: green
+        netvm: ndp-kuhbs-net-gateway
+      backup:
+        paths:
+        - /home/user/play
+      launchers:
+      - id: vsplay
+        name: VSCode Play Fish
+        user: user
+        dispvm: false
+        command: /usr/bin/play
+        run_in_terminal: true
+        shutdown_on_exit_0: false
+    - id: private
+      prefs:
+        label: yellow
+      backup:
+        paths:
+        - /home/user/play
+      launchers:
+      - id: vsplay
+        name: VSCode Play Private
+        user: user
+        dispvm: false
+        command: /usr/bin/play
+        run_in_terminal: true
+        shutdown_on_exit_0: false

@@ -1,0 +1,299 @@
+# KUHBS bash completion
+# Keep completion fast: list local kuhb dirs directly and call qvm-ls at most once
+
+_kuhbs_complete_commands() {
+    printf '%s\n' \
+        backup \
+        backup-all \
+        backup-mount \
+        backup-umount \
+        check \
+        create \
+        create-all \
+        gui \
+        help \
+        link \
+        list \
+        remove \
+        remove-all \
+        repo-add \
+        repo-list \
+        repo-remove \
+        restore \
+        restore-all \
+        terminal \
+        unlink \
+        update-repo \
+        upgrade \
+        upgrade-all
+}
+
+_kuhbs_complete_global_options() {
+    printf '%s\n' \
+        --defaults
+}
+
+_kuhbs_complete_kuhbs() {
+    # Installed kuhbs are editable directories under the default local config path
+    local kuhbs_dir=~/.kuhbs/my-kuhbs
+    local path kuhb_id
+
+    [[ -d "$kuhbs_dir" ]] || return 0
+    for path in "$kuhbs_dir"/*; do
+        [[ -f "$path/kuhb.yml" ]] || continue
+        kuhb_id=${path##*/}
+        # dom0 is reserved and completed separately only for commands that support it
+        [[ "$kuhb_id" == "dom0" ]] && continue
+        printf '%s\n' "$kuhb_id"
+    done
+}
+
+_kuhbs_complete_base_templates() {
+    local kuhbs_dir=~/.kuhbs/my-kuhbs
+
+    # Use KUHBS' YAML dependency so quoted top-level values never become nested setup-template candidates
+    command python3 - "$kuhbs_dir" 2>/dev/null <<'PY'
+from pathlib import Path
+import sys
+import yaml
+
+templates = set()
+for path in Path(sys.argv[1]).glob("*/kuhb.yml"):
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError):
+        # Broken active YAML is omitted because the CLI validation reports it before any operation
+        continue
+    template = raw.get("template") if isinstance(raw, dict) else None
+    # Only valid top-level Qubes names belong to Upgrade target completion
+    if isinstance(template, str) and template != "dom0":
+        templates.add(template)
+print(*sorted(templates), sep="\n")
+PY
+}
+
+
+_kuhbs_walk_repos() {
+    # Stop at the first real checkout and never descend through hidden or symlink directories
+    local root=$1
+    local repos_dir=$2
+    local path
+
+    for path in "$root"/*; do
+        [[ -d "$path" && ! -L "$path" ]] || continue
+        [[ "${path##*/}" == .* ]] && continue
+        if [[ -d "$path/.git" && ! -L "$path/.git" ]]; then
+            printf '%s\n' "${path#"$repos_dir"/}"
+            continue
+        fi
+        _kuhbs_walk_repos "$path" "$repos_dir"
+    done
+}
+
+_kuhbs_complete_repos() {
+    # Match repo-list: real checkout roots at any depth, excluding hidden, nested, and symlink paths
+    local repos_dir=~/.kuhbs/repos
+
+    [[ -d "$repos_dir" ]] || return 0
+    _kuhbs_walk_repos "$repos_dir" "$repos_dir"
+}
+
+_kuhbs_complete_repo_kuhbs() {
+    # Link targets are explicit repo-path/kuhb-dir pairs, never short names
+    local repos_dir=~/.kuhbs/repos
+    local repo path
+
+    [[ -d "$repos_dir" ]] || return 0
+    while IFS= read -r repo; do
+        for path in "$repos_dir/$repo"/*/kuhb.yml; do
+            [[ -f "$path" && ! -L "$path" ]] || continue
+            path=${path%/kuhb.yml}
+            [[ -d "$path" && ! -L "$path" ]] || continue
+            path=${path#"$repos_dir"/}
+            printf '%s\n' "$path"
+        done
+    done < <(_kuhbs_complete_repos)
+}
+
+_kuhbs_complete_linked_kuhbs() {
+    # Unlink uses the repo-relative source stored in each local KUHB symlink
+    local repos_dir=~/.kuhbs/repos
+    local kuhbs_dir=~/.kuhbs/my-kuhbs
+    local path target
+
+    [[ -d "$kuhbs_dir" ]] || return 0
+    for path in "$kuhbs_dir"/*; do
+        [[ -L "$path" && -f "$path/kuhb.yml" ]] || continue
+        target=$(readlink "$path")
+        [[ "$target" == "$repos_dir"/* ]] || continue
+        printf '%s\n' "${target#"$repos_dir"/}"
+    done
+}
+
+_kuhbs_complete_unused() {
+    local command_position=$1
+    local candidate j
+
+    # Multi-source commands should not offer a source that is already present in this command line
+    while IFS= read -r candidate; do
+        for ((j = command_position + 1; j < COMP_CWORD; j++)); do
+            [[ "$candidate" == "${COMP_WORDS[j]}" ]] && continue 2
+        done
+        printf '%s\n' "$candidate"
+    done
+}
+
+_kuhbs_complete_vms() {
+    # qvm-ls is the only Qubes call here; keep it to one call per completion attempt
+    printf '%s\n' dom0
+    command qvm-ls --raw-data --fields name 2>/dev/null | sed '/^[Nn][Aa][Mm][Ee]$/d; /^dom0$/d; /^$/d'
+}
+
+_kuhbs_complete_files() {
+    # Readline needs filename mode to quote whitespace when it inserts a candidate
+    compopt -o filenames 2>/dev/null || true
+    mapfile -t COMPREPLY < <(compgen -f -- "$1")
+}
+
+_kuhbs() {
+    local cur prev command_index command word options argument_index options_ended defaults_prefix
+    COMPREPLY=()
+    cur=${COMP_WORDS[COMP_CWORD]}
+    prev=${COMP_WORDS[COMP_CWORD - 1]}
+
+    # An earlier -- makes later option-looking words positional data
+    options_ended=false
+    for ((i = 1; i < COMP_CWORD; i++)); do
+        if [[ "${COMP_WORDS[i]}" == "--" ]]; then
+            options_ended=true
+            break
+        fi
+    done
+
+    # Bash exposes the equals form as --defaults, =, PATH with its default word breaks
+    if [[ "$options_ended" == false && "$prev" == "=" ]] && (( COMP_CWORD >= 2 )) && [[ "${COMP_WORDS[COMP_CWORD - 2]}" == "--defaults" ]]; then
+        _kuhbs_complete_files "$cur"
+        return 0
+    fi
+
+    # Both global-option spellings complete the defaults file and then stop
+    if [[ "$options_ended" == false && "$prev" == "--defaults" ]]; then
+        _kuhbs_complete_files "$cur"
+        return 0
+    fi
+    if [[ "$options_ended" == false && "$cur" == --defaults=* ]]; then
+        defaults_prefix=${cur#--defaults=}
+        _kuhbs_complete_files "$defaults_prefix"
+        for ((i = 0; i < ${#COMPREPLY[@]}; i++)); do
+            COMPREPLY[i]="--defaults=${COMPREPLY[i]}"
+        done
+        return 0
+    fi
+
+    # Find the first non-option token, skipping option values
+    command_index=0
+    for ((i = 1; i < COMP_CWORD; i++)); do
+        word=${COMP_WORDS[i]}
+        if [[ "$word" == "--defaults" ]]; then
+            if [[ "${COMP_WORDS[i + 1]}" == "=" ]]; then
+                ((i += 2))
+            else
+                ((i++))
+            fi
+            continue
+        fi
+        if [[ "$word" == --defaults=* || "$word" == -* ]]; then
+            continue
+        fi
+        command=$word
+        command_index=$i
+        break
+    done
+
+    # Complete the command position with commands and global options
+    if [[ -z "${command:-}" ]]; then
+        if [[ "$cur" == -* ]]; then
+            COMPREPLY=( $(compgen -W "$(_kuhbs_complete_global_options)" -- "$cur") )
+        else
+            COMPREPLY=( $(compgen -W "$(_kuhbs_complete_commands) $(_kuhbs_complete_global_options)" -- "$cur") )
+        fi
+        return 0
+    fi
+
+    # Global options remain valid after a command, while Terminal adds its own switches
+    if [[ "$options_ended" == false && "$cur" == -* ]]; then
+        options=$(_kuhbs_complete_global_options)
+        if [[ "$command" == "terminal" ]]; then
+            options+=" --dispvm --shutdown-on-exit-0"
+        fi
+        COMPREPLY=( $(compgen -W "$options" -- "$cur") )
+        return 0
+    fi
+
+    # Positional completion skips recognized options only until the explicit -- marker
+    argument_index=0
+    options_ended=false
+    for ((i = command_index + 1; i < COMP_CWORD; i++)); do
+        word=${COMP_WORDS[i]}
+        if [[ "$options_ended" == false && "$word" == "--" ]]; then
+            options_ended=true
+            continue
+        fi
+        if [[ "$options_ended" == false && "$word" == "--defaults" ]]; then
+            if [[ "${COMP_WORDS[i + 1]}" == "=" ]]; then
+                ((i += 2))
+            else
+                ((i++))
+            fi
+            continue
+        fi
+        if [[ "$options_ended" == false && "$word" == --defaults=* ]]; then
+            continue
+        fi
+        if [[ "$options_ended" == false && "$command" == "terminal" && ( "$word" == "--dispvm" || "$word" == "--shutdown-on-exit-0" ) ]]; then
+            continue
+        fi
+        ((argument_index += 1))
+    done
+
+    # Complete command-specific positional arguments only
+    case "$command" in
+        create|remove)
+            COMPREPLY=( $(compgen -W "$(_kuhbs_complete_kuhbs)" -- "$cur") )
+            ;;
+        backup|restore)
+            COMPREPLY=( $(compgen -W "$(_kuhbs_complete_kuhbs) dom0" -- "$cur") )
+            ;;
+        upgrade)
+            COMPREPLY=( $(compgen -W "$(_kuhbs_complete_kuhbs) $(_kuhbs_complete_base_templates) dom0" -- "$cur") )
+            ;;
+        terminal)
+            if (( argument_index == 0 )); then
+                COMPREPLY=( $(compgen -W "$(_kuhbs_complete_vms)" -- "$cur") )
+            elif (( argument_index == 1 )); then
+                COMPREPLY=( $(compgen -W "user root" -- "$cur") )
+            fi
+            ;;
+        repo-add)
+            COMPREPLY=()
+            ;;
+        update-repo|repo-remove)
+            if (( argument_index == 0 )); then
+                COMPREPLY=( $(compgen -W "$(_kuhbs_complete_repos)" -- "$cur") )
+            fi
+            ;;
+        link)
+            COMPREPLY=( $(compgen -W "$(_kuhbs_complete_unused "$command_index" < <(_kuhbs_complete_repo_kuhbs))" -- "$cur") )
+            ;;
+        unlink)
+            COMPREPLY=( $(compgen -W "$(_kuhbs_complete_unused "$command_index" < <(_kuhbs_complete_linked_kuhbs))" -- "$cur") )
+            ;;
+        check|backup-all|backup-mount|backup-umount|create-all|gui|help|list|repo-list|restore-all|upgrade-all)
+            COMPREPLY=()
+            ;;
+    esac
+
+    return 0
+}
+
+complete -F _kuhbs kuhbs

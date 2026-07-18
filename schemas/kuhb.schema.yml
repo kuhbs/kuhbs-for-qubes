@@ -1,0 +1,573 @@
+# Standard JSON Schema for raw user KUHB files and fully resolved definitions
+# validation.py selects $defs.raw before merge and $defs.resolved after merge
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: kuhb.schema.yml
+
+$defs:
+  # Qubes labels accepted by qvm-create and qvm-prefs in this product
+  label:
+    type: string
+    enum:
+      - red
+      - orange
+      - yellow
+      - green
+      - gray
+      - blue
+      - purple
+      - black
+
+  # Qubes names are command arguments, so option-like and line-breaking values are never valid
+  qubes_name:
+    type: string
+    minLength: 1
+    maxLength: 31
+    pattern: '^[A-Za-z0-9][A-Za-z0-9_-]{0,30}$(?![\s\S])'
+
+  # Qubes preference and feature values are JSON-compatible scalar command arguments.
+  # NUL cannot be represented in a process argv entry; other scalar meaning belongs to Qubes.
+  scalar:
+    type:
+      - string
+      - number
+      - boolean
+      - 'null'
+    pattern: '^[^\x00]*$(?![\s\S])'
+
+  # Known runtime-sensitive Qubes preferences have strict types
+  prefs:
+    type: object
+    propertyNames:
+      type: string
+      minLength: 1
+      pattern: '^[^\x00]*$(?![\s\S])'
+    properties:
+      autostart:
+        type: boolean
+      include_in_backups:
+        type: boolean
+      label:
+        $ref: '#/$defs/label'
+      maxmem:
+        type: integer
+        minimum: 0
+      memory:
+        type: integer
+        minimum: 0
+      netvm:
+        oneOf:
+          - type: 'null'
+          - $ref: '#/$defs/qubes_name'
+            not:
+              enum:
+                - None
+                - none
+      provides_network:
+        type: boolean
+      template_for_dispvms:
+        type: boolean
+      vcpus:
+        type: integer
+        minimum: 1
+      virt_mode:
+        type: string
+        enum:
+          - hvm
+          - pvh
+          - pv
+    additionalProperties:
+      $ref: '#/$defs/scalar'
+
+  # Fully merged resources require every preference runtime indexes directly
+  resolved_setup_prefs:
+    allOf:
+      - $ref: '#/$defs/prefs'
+      - type: object
+        required:
+          - label
+
+  resolved_runtime_prefs:
+    allOf:
+      - $ref: '#/$defs/prefs'
+      - type: object
+        required:
+          - autostart
+          - label
+
+  resolved_app_prefs:
+    allOf:
+      - $ref: '#/$defs/prefs'
+      - type: object
+        required:
+          - autostart
+          - label
+          - template_for_dispvms
+
+  # Every qvm-service entry is an actual YAML boolean
+  services:
+    type: object
+    propertyNames:
+      type: string
+      minLength: 1
+      pattern: '^[^\x00]*$(?![\s\S])'
+    additionalProperties:
+      type: boolean
+
+  # Qubes features accept scalar values but never nested YAML containers
+  features:
+    type: object
+    propertyNames:
+      type: string
+      minLength: 1
+      pattern: '^[^\x00]*$(?![\s\S])'
+    additionalProperties:
+      $ref: '#/$defs/scalar'
+
+  setup_scripts:
+    type: array
+    items:
+      type: string
+      minLength: 1
+
+  backup:
+    type: object
+    required:
+      - paths
+    properties:
+      paths:
+        type: array
+        minItems: 1
+        items:
+          type: string
+          minLength: 1
+      # Busy application data may opt into tar warnings instead of strict read failures
+      ignore_failed_read:
+        type: boolean
+    additionalProperties: false
+
+  launcher:
+    type: object
+    required:
+      - id
+      - name
+      - user
+      - command
+      - dispvm
+      - run_in_terminal
+      - shutdown_on_exit_0
+    properties:
+      id:
+        type: string
+        minLength: 1
+        maxLength: 32
+        pattern: '^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$(?![\s\S])'
+      name:
+        type: string
+        minLength: 1
+        pattern: '^[^\x00-\x1F\x7F]+$(?![\s\S])'
+      user:
+        type: string
+        minLength: 1
+        maxLength: 32
+        pattern: '^[a-z_][a-z0-9_-]*$(?![\s\S])'
+      command:
+        type: string
+        minLength: 1
+        pattern: '^[^\x00-\x1F\x7F]+$(?![\s\S])'
+      dispvm:
+        type: boolean
+      run_in_terminal:
+        type: boolean
+      shutdown_on_exit_0:
+        type: boolean
+      autostart:
+        type: boolean
+    additionalProperties: false
+
+  resolved_launcher:
+    allOf:
+      - $ref: '#/$defs/launcher'
+      - type: object
+        required:
+          - shutdown_on_exit_0
+          - autostart
+
+  raw_tpl:
+    type: object
+    properties:
+      volume_ephemeral:
+        type: boolean
+      setup_scripts:
+        $ref: '#/$defs/setup_scripts'
+      prefs:
+        $ref: '#/$defs/prefs'
+      services:
+        $ref: '#/$defs/services'
+      features:
+        $ref: '#/$defs/features'
+      launchers:
+        type: array
+        items:
+          $ref: '#/$defs/launcher'
+      backup:
+        $ref: '#/$defs/backup'
+    additionalProperties: false
+
+  raw_instance:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: string
+        minLength: 1
+        maxLength: 32
+        pattern: '^[A-Za-z0-9_-]+$(?![\s\S])'
+      volume_ephemeral:
+        type: boolean
+      setup_scripts:
+        $ref: '#/$defs/setup_scripts'
+      i3_integration_auto_pause:
+        type: boolean
+      i3_integration_workspace_attention:
+        type: string
+        minLength: 1
+      prefs:
+        $ref: '#/$defs/prefs'
+      services:
+        $ref: '#/$defs/services'
+      features:
+        $ref: '#/$defs/features'
+      launchers:
+        type: array
+        items:
+          $ref: '#/$defs/launcher'
+      backup:
+        $ref: '#/$defs/backup'
+    additionalProperties: false
+
+  raw_instance_kind:
+    type: object
+    required:
+      - instances
+    properties:
+      instances:
+        type: array
+        minItems: 1
+        items:
+          $ref: '#/$defs/raw_instance'
+    additionalProperties: false
+
+  raw_setup_template:
+    # The temporary standalone template is never a launcher or backup target
+    type: object
+    properties:
+      volume_ephemeral:
+        type: boolean
+      setup_scripts:
+        $ref: '#/$defs/setup_scripts'
+      prefs:
+        $ref: '#/$defs/prefs'
+      services:
+        $ref: '#/$defs/services'
+      features:
+        $ref: '#/$defs/features'
+    additionalProperties: false
+
+  raw_sta_kind:
+    type: object
+    required:
+      - instances
+    properties:
+      setup_template:
+        $ref: '#/$defs/raw_setup_template'
+      instances:
+        type: array
+        minItems: 1
+        items:
+          $ref: '#/$defs/raw_instance'
+    additionalProperties: false
+
+  resolved_tpl:
+    type: object
+    required:
+      - volume_ephemeral
+      - setup_scripts
+      - prefs
+      - services
+      - features
+      - launchers
+    properties:
+      volume_ephemeral:
+        type: boolean
+      setup_scripts:
+        $ref: '#/$defs/setup_scripts'
+      prefs:
+        $ref: '#/$defs/resolved_setup_prefs'
+      services:
+        $ref: '#/$defs/services'
+      features:
+        $ref: '#/$defs/features'
+      launchers:
+        type: array
+        items:
+          $ref: '#/$defs/resolved_launcher'
+      backup:
+        $ref: '#/$defs/backup'
+    additionalProperties: false
+
+  resolved_instance:
+    type: object
+    required:
+      - id
+      - volume_ephemeral
+      - setup_scripts
+      - i3_integration_auto_pause
+      - prefs
+      - services
+      - features
+      - launchers
+    properties:
+      id:
+        type: string
+        minLength: 1
+        maxLength: 32
+        pattern: '^[A-Za-z0-9_-]+$(?![\s\S])'
+      volume_ephemeral:
+        type: boolean
+      setup_scripts:
+        $ref: '#/$defs/setup_scripts'
+      i3_integration_auto_pause:
+        type: boolean
+      i3_integration_workspace_attention:
+        type: string
+        minLength: 1
+      prefs:
+        $ref: '#/$defs/resolved_runtime_prefs'
+      services:
+        $ref: '#/$defs/services'
+      features:
+        $ref: '#/$defs/features'
+      launchers:
+        type: array
+        items:
+          $ref: '#/$defs/resolved_launcher'
+      backup:
+        $ref: '#/$defs/backup'
+    additionalProperties: false
+
+  resolved_app_instance:
+    type: object
+    required:
+      - id
+      - volume_ephemeral
+      - setup_scripts
+      - i3_integration_auto_pause
+      - prefs
+      - services
+      - features
+      - launchers
+    properties:
+      id:
+        type: string
+        minLength: 1
+        maxLength: 32
+        pattern: '^[A-Za-z0-9_-]+$(?![\s\S])'
+      volume_ephemeral:
+        type: boolean
+      setup_scripts:
+        $ref: '#/$defs/setup_scripts'
+      i3_integration_auto_pause:
+        type: boolean
+      i3_integration_workspace_attention:
+        type: string
+        minLength: 1
+      prefs:
+        $ref: '#/$defs/resolved_app_prefs'
+      services:
+        $ref: '#/$defs/services'
+      features:
+        $ref: '#/$defs/features'
+      launchers:
+        type: array
+        items:
+          $ref: '#/$defs/resolved_launcher'
+      backup:
+        $ref: '#/$defs/backup'
+    additionalProperties: false
+
+  resolved_app_kind:
+    type: object
+    required:
+      - instances
+    properties:
+      instances:
+        type: array
+        minItems: 1
+        items:
+          $ref: '#/$defs/resolved_app_instance'
+    additionalProperties: false
+
+  resolved_instance_kind:
+    type: object
+    required:
+      - instances
+    properties:
+      instances:
+        type: array
+        minItems: 1
+        items:
+          $ref: '#/$defs/resolved_instance'
+    additionalProperties: false
+
+  resolved_setup_template:
+    type: object
+    required:
+      - volume_ephemeral
+      - setup_scripts
+      - prefs
+      - services
+      - features
+    properties:
+      volume_ephemeral:
+        type: boolean
+      setup_scripts:
+        $ref: '#/$defs/setup_scripts'
+      prefs:
+        $ref: '#/$defs/resolved_setup_prefs'
+      services:
+        $ref: '#/$defs/services'
+      features:
+        $ref: '#/$defs/features'
+    additionalProperties: false
+
+  resolved_sta_kind:
+    type: object
+    required:
+      - setup_template
+      - instances
+    properties:
+      setup_template:
+        $ref: '#/$defs/resolved_setup_template'
+      instances:
+        type: array
+        minItems: 1
+        items:
+          $ref: '#/$defs/resolved_instance'
+    additionalProperties: false
+
+  raw:
+    type: object
+    required:
+      - id
+      - name
+      - description
+      - icon
+      - order
+      - type
+      - template
+      - kuhs
+    properties:
+      id:
+        type: string
+        minLength: 1
+        maxLength: 32
+        pattern: '^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$(?![\s\S])'
+      name:
+        type: string
+        minLength: 1
+      description:
+        type: string
+        minLength: 1
+      icon:
+        type: string
+        minLength: 1
+        pattern: '^[^\x00-\x1F\x7F]+$(?![\s\S])'
+      order:
+        type: integer
+        minimum: 1
+        maximum: 1000
+      type:
+        type: string
+        enum:
+          - app
+          - sta
+          - ndp
+          - udp
+      template:
+        $ref: '#/$defs/qubes_name'
+      confirm_network_after_upgrade:
+        type: boolean
+      kuhs:
+        type: object
+        properties:
+          tpl:
+            $ref: '#/$defs/raw_tpl'
+          app:
+            $ref: '#/$defs/raw_instance_kind'
+          ndp:
+            $ref: '#/$defs/raw_instance_kind'
+          sta:
+            $ref: '#/$defs/raw_sta_kind'
+        additionalProperties: false
+    additionalProperties: false
+
+  resolved:
+    type: object
+    required:
+      - id
+      - name
+      - description
+      - icon
+      - order
+      - type
+      - template
+      - confirm_network_after_upgrade
+      - kuhs
+    properties:
+      id:
+        type: string
+        minLength: 1
+        maxLength: 32
+        pattern: '^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$(?![\s\S])'
+      name:
+        type: string
+        minLength: 1
+      description:
+        type: string
+        minLength: 1
+      icon:
+        type: string
+        minLength: 1
+        pattern: '^[^\x00-\x1F\x7F]+$(?![\s\S])'
+      order:
+        type: integer
+        minimum: 1
+        maximum: 1000
+      type:
+        type: string
+        enum:
+          - app
+          - sta
+          - ndp
+          - udp
+      template:
+        $ref: '#/$defs/qubes_name'
+      confirm_network_after_upgrade:
+        type: boolean
+      kuhs:
+        type: object
+        properties:
+          tpl:
+            $ref: '#/$defs/resolved_tpl'
+          app:
+            $ref: '#/$defs/resolved_app_kind'
+          ndp:
+            $ref: '#/$defs/resolved_instance_kind'
+          sta:
+            $ref: '#/$defs/resolved_sta_kind'
+        additionalProperties: false
+    additionalProperties: false
+
+# Raw KUHB input is the default entry point for external schema tools
+$ref: '#/$defs/raw'
